@@ -1,0 +1,4 @@
+Miguel Castillo II
+Experimentation Results
+
+For my experiment, I changed the probability of mutation for substitution, deletion, and insertion from 5% to 25%.  Before this change, generation to generation, there were very few iterations in the text.  With increased mutation chance, the phrase is altered more on average than previously, and takes less time to reach a distance of 0.  The older version of the code would reach the 500 generation cap and be stuck at a distance of 1.  This new function with probability changed reaches a distance of 0 in aroudn 130 generations, a much more effecient program

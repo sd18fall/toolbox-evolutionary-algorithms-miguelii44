@@ -102,7 +102,46 @@ def evaluate_text(message, goal_text, verbose=VERBOSE):
     return (distance, )     # Length 1 tuple, required by DEAP
 
 
-def mutate_text(message, prob_ins=0.05, prob_del=0.05, prob_sub=0.05):
+memo = {}
+
+def levenshtein_distance(string, goal_text):
+    """ Computes the minimum amount of edits to transform one string into another
+    """
+    if string+goal_text in memo:
+        return memo[string+goal_text]
+    if string == "":
+        return len(goal_text)
+    if goal_text == "":
+        return len(string)
+
+    if string[-1] == goal_text[-1]:
+        cost = 0
+    else:
+        cost = 1
+    res = min([levenshtein_distance(string[:-1], goal_text)+1,
+               levenshtein_distance(string, goal_text[:-1])+1,
+               levenshtein_distance(string[:-1], goal_text[:-1]) + cost])
+    memo[string+goal_text] = res
+    return res
+
+def mate_text(str1, str2):
+    smallest_len = min(len(str1),len(str2))
+    start_point = random.randint(0, smallest_len)
+    end_point = random.randint(start_point, smallest_len)
+    str1_swap = str1[start_point:end_point]
+    str1_end = str1[end_point:]
+    str2_swap = str2[start_point:end_point]
+    str2_end = str2[end_point:]
+    del str1[start_point:]
+    str1.extend(str2_swap)
+    str1.extend(str2_end)
+    del str2[start_point:]
+    str2.extend(str1_swap)
+    str2.extend(str1_end)
+
+    return str1, str2
+
+def mutate_text(message, prob_ins=0.25, prob_del=0.25, prob_sub=0.25):
     """Given a Message and independent probabilities for each mutation type,
     return a length 1 tuple containing the mutated Message.
 
@@ -115,10 +154,20 @@ def mutate_text(message, prob_ins=0.05, prob_del=0.05, prob_sub=0.05):
     """
 
     if random.random() < prob_ins:
-        # TODO: Implement insertion-type mutation
-        pass
+        location = random.randint(0, len(message)-1)
+        insert = random.choice(VALID_CHARS)
+        message.insert(location, insert)
 
-    # TODO: Also implement deletion and substitution mutations
+    if random.random() < prob_del:
+        location = random.randint(0, len(message)-1)
+        del message[location]
+
+    if random.random() < prob_sub:
+        location = random.randint(0, len(message)-1)
+        del message[location]
+        insert = random.choice(VALID_CHARS)
+        message.insert(location, insert)
+
     # HINT: Message objects inherit from list, so they also inherit
     #       useful list methods
     # HINT: You probably want to use the VALID_CHARS global variable
@@ -143,7 +192,7 @@ def get_toolbox(text):
 
     # Genetic operators
     toolbox.register("evaluate", evaluate_text, goal_text=text)
-    toolbox.register("mate", tools.cxTwoPoint)
+    toolbox.register("mate", mate_text)
     toolbox.register("mutate", mutate_text)
     toolbox.register("select", tools.selTournament, tournsize=3)
 
